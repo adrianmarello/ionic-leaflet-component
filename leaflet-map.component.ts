@@ -1,4 +1,10 @@
 import { Component, ViewChild, Input, ElementRef } from '@angular/core';
+import { Geolocation } from '@ionic-native/geolocation';
+
+import { Subject } from 'rxjs/Subject';
+import 'rxjs/add/operator/takeUntil';
+
+import { GlobalService } from './../../providers/global.service';
 
 import * as L from 'leaflet';
 
@@ -26,7 +32,7 @@ export class LeafletMapComponent {
     destRouteLatLng: any;
     destRouteLatLngGlobal: any;
 
-    constructor() {
+    constructor(private geolocation: Geolocation, private globalService: GlobalService) {
         this.layers = [];
     }
 
@@ -36,11 +42,11 @@ export class LeafletMapComponent {
 
     initMap() {
         let streets = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/streets-v10/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoicGF0cmlja3IiLCJhIjoiY2l2aW9lcXlvMDFqdTJvbGI2eXUwc2VjYSJ9.trTzsdDXD2lMJpTfCVsVuA');
-        /*let satellite = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v10/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoicGF0cmlja3IiLCJhIjoiY2l2aW9lcXlvMDFqdTJvbGI2eXUwc2VjYSJ9.trTzsdDXD2lMJpTfCVsVuA');
+        let satellite = L.tileLayer('https://api.mapbox.com/styles/v1/mapbox/satellite-streets-v10/tiles/256/{z}/{x}/{y}?access_token=pk.eyJ1IjoicGF0cmlja3IiLCJhIjoiY2l2aW9lcXlvMDFqdTJvbGI2eXUwc2VjYSJ9.trTzsdDXD2lMJpTfCVsVuA');
         var baseMaps = {
             "Satellite": satellite,
             "Streets": streets
-        };*/
+        };
 
         let mapEle = this.mapElement.nativeElement;
         this.map = L.map(mapEle, {
@@ -91,6 +97,39 @@ export class LeafletMapComponent {
     setIcons(layer: string, icon: any) {
         this.layers[layer].eachLayer(function(layer){
             layer.setIcon(layer.options.icon = icon);
+        });
+    }
+
+    myLocationSet(center?:boolean){
+        // Get current position
+        this.geolocation.getCurrentPosition({enableHighAccuracy: true, timeout: 6000}).then((data) => {
+            //let latLng = new google.maps.LatLng(data.coords.latitude, data.coords.longitude);
+            /*if(!this.myPositionMarker){
+                // Create marker if it dont exist
+                this.myPositionMarker = new google.maps.Marker({
+                    position: latLng,
+                    map: this.map,
+                    title: 'Estoy aquí!',
+                    icon: 'assets/images/person-marker2.png'
+                });
+            }*/
+            // Set marker new position on the map
+           // this.myPositionMarker.setPosition(latLng);
+           this.globalService.showAlert('gps', 'work');
+        }).catch((error) => {
+            console.log(error);
+        });
+    }
+
+    myLocationWatch(){
+        let watch = this.geolocation.watchPosition({enableHighAccuracy: true});
+        watch.subscribe((data) => {
+            //let latLng = new google.maps.LatLng(data.coords.latitude, data.coords.longitude);
+            if (this.myPositionMarker){
+                //this.myPositionMarker.setPosition(latLng);
+            }else{
+                this.myLocationSet();
+            }
         });
     }
 
