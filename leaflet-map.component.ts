@@ -1,9 +1,6 @@
 import { Component, ViewChild, Input, ElementRef } from '@angular/core';
 import { Geolocation } from '@ionic-native/geolocation';
 
-import { Subject } from 'rxjs/Subject';
-import 'rxjs/add/operator/takeUntil';
-
 import { GlobalService } from './../../providers/global.service';
 
 import * as L from 'leaflet';
@@ -26,6 +23,8 @@ export class LeafletMapComponent {
     // INITIAL VARS
     map: any;
     layers: any[] = [];
+    markers: any[] = [];
+    circles: any[] = [];
     polyline: any;
     myPositionMarker: any;
     originRouteLatLng: any;
@@ -63,7 +62,14 @@ export class LeafletMapComponent {
         this.map.resize()
     }
 
-    setCenter(latitude: number = this.latitude, longitude: number = this.longitude): void {}
+    setCenter(fromPosition: boolean = false, latitude: number = this.latitude, longitude: number = this.longitude): void {
+        if (fromPosition && this.myPositionMarker){
+            this.map.setView(this.myPositionMarker.getLatLng());
+        }else{
+            let latLng = new L.LatLng(latitude, longitude);
+            this.map.setView(latLng);
+        }
+    }
 
     setBounds(layer: any, route:boolean=false): void {}
     
@@ -103,34 +109,44 @@ export class LeafletMapComponent {
     myLocationSet(center?:boolean){
         // Get current position
         this.geolocation.getCurrentPosition({enableHighAccuracy: true, timeout: 6000}).then((data) => {
-            //let latLng = new google.maps.LatLng(data.coords.latitude, data.coords.longitude);
-            /*if(!this.myPositionMarker){
-                // Create marker if it dont exist
-                this.myPositionMarker = new google.maps.Marker({
-                    position: latLng,
-                    map: this.map,
-                    title: 'Estoy aquí!',
-                    icon: 'assets/images/person-marker2.png'
+            if(center){this.globalService.presentLoading('Buscando su ubicación...')}
+            let latLng = new L.LatLng(data.coords.latitude, data.coords.longitude);
+            if(!this.myPositionMarker){
+                var icon1 = L.icon({
+                    iconUrl: 'assets/images/marker2.png',
+                    iconSize: [40,40]
                 });
-            }*/
+                // Create marker if it dont exist
+                this.myPositionMarker = L.marker(latLng, {icon: icon1}).addTo(this.map).bindPopup("Estoy aquí");
+            }
             // Set marker new position on the map
-           // this.myPositionMarker.setPosition(latLng);
-           this.globalService.showAlert('gps', 'work');
+            this.myPositionMarker.setLatLng(latLng);
+            //this.globalService.showAlert('gps', 'success');
+            this.globalService.dismissLoading();
         }).catch((error) => {
             console.log(error);
+            this.globalService.dismissLoading();
         });
     }
 
     myLocationWatch(){
         let watch = this.geolocation.watchPosition({enableHighAccuracy: true});
         watch.subscribe((data) => {
-            //let latLng = new google.maps.LatLng(data.coords.latitude, data.coords.longitude);
+            let latLng = new L.LatLng(data.coords.latitude, data.coords.longitude);
             if (this.myPositionMarker){
-                //this.myPositionMarker.setPosition(latLng);
+                this.myPositionMarker.setLatLng(latLng);
             }else{
                 this.myLocationSet();
             }
         });
+    }
+
+    getMyLocation() {
+        if(this.myPositionMarker){
+            return this.myPositionMarker.getLatLng();
+        }else{
+            return false
+        }
     }
 
 
@@ -149,10 +165,21 @@ export class LeafletMapComponent {
     
     addOnClick(layer: string){}
 
-    setLabel(layer: string){
+    setLabel(layer: string, field: string){
         this.layers[layer].bindPopup(function(data){
-            return data.feature.properties.nombre
+            return data.feature.properties[field]
         });
+    }
+
+    createCircle(latitud: number, longitud: number, radio: number, nombre: string) {
+        let latLng = new L.LatLng(latitud, longitud);
+        this.circles[nombre] = L.circle(latLng, {radius: radio}).addTo(this.map);
+    }
+
+    removeCircle(nombre: string){
+        if (this.circles[nombre]){
+            this.map.removeLayer(this.circles[nombre]);
+        }
     }
 
 }
