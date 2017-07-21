@@ -167,7 +167,7 @@ export class LeafletMapComponent {
 
     setLabel(layer: string, field: string){
         this.layers[layer].bindPopup(function(data){
-            return data.feature.properties[field]
+            return '<div class="hospedajedata" data-hospedaje="'+ data.feature.properties[field] +'">' + data.feature.properties[field] + '</div>'
         });
     }
 
@@ -180,6 +180,10 @@ export class LeafletMapComponent {
         if (this.circles[nombre]){
             this.map.removeLayer(this.circles[nombre]);
         }
+    }
+
+    setOnClick(layer: string){
+        
     }
 
 }
