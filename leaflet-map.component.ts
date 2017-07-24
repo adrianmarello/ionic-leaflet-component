@@ -85,7 +85,11 @@ export class LeafletMapComponent {
     }
 
     removeLayer(layer: string) {
-        this.map.removeLayer(this.layers[layer]);
+        if(this.layers[layer]){
+            this.map.removeLayer(this.layers[layer]);
+        }else{
+            return false
+        }
     }
 
     addGeoJson(layer: string, json: any) {
@@ -106,11 +110,10 @@ export class LeafletMapComponent {
         });
     }
 
-    myLocationSet(center?:boolean){
+    myLocationSet(center: boolean = false, latitud: string = '', longitud: string = ''){
         // Get current position
-        this.geolocation.getCurrentPosition({enableHighAccuracy: true, timeout: 6000}).then((data) => {
-            if(center){this.globalService.presentLoading('Buscando su ubicación...')}
-            let latLng = new L.LatLng(data.coords.latitude, data.coords.longitude);
+        if(latitud && longitud){
+            let latLng = new L.LatLng(latitud, longitud);
             if(!this.myPositionMarker){
                 var icon1 = L.icon({
                     iconUrl: 'assets/images/marker2.png',
@@ -119,14 +122,27 @@ export class LeafletMapComponent {
                 // Create marker if it dont exist
                 this.myPositionMarker = L.marker(latLng, {icon: icon1}).addTo(this.map).bindPopup("Estoy aquí");
             }
-            // Set marker new position on the map
-            this.myPositionMarker.setLatLng(latLng);
-            //this.globalService.showAlert('gps', 'success');
-            this.globalService.dismissLoading();
-        }).catch((error) => {
-            console.log(error);
-            this.globalService.dismissLoading();
-        });
+        }else{
+            this.geolocation.getCurrentPosition({enableHighAccuracy: true, timeout: 6000}).then((data) => {
+                if(center){this.globalService.presentLoading('Buscando su ubicación...')}
+                let latLng = new L.LatLng(data.coords.latitude, data.coords.longitude);
+                if(!this.myPositionMarker){
+                    var icon1 = L.icon({
+                        iconUrl: 'assets/images/marker2.png',
+                        iconSize: [40,40]
+                    });
+                    // Create marker if it dont exist
+                    this.myPositionMarker = L.marker(latLng, {icon: icon1}).addTo(this.map).bindPopup("Estoy aquí");
+                }
+                // Set marker new position on the map
+                this.myPositionMarker.setLatLng(latLng);
+                //this.globalService.showAlert('gps', 'success');
+                this.globalService.dismissLoading();
+            }).catch((error) => {
+                console.log(error);
+                this.globalService.dismissLoading();
+            });
+        }
     }
 
     myLocationWatch(){
